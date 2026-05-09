@@ -3,22 +3,24 @@ from fastapi import APIRouter, HTTPException
 from app.services.github_service import get_user, get_repos
 from app.services.analyzer import analyze_repos
 from app.services.scoring import calculate_score
-from app.services.ai_summary import generate_summary
+from app.services.ai_summary import generate_summary, generate_comparison_summary
 from app.services.comparison import compare_users
-from app.services.ai_summary import generate_comparison_summary
 
 router = APIRouter()
 
 
+# -------------------------
+# SINGLE USER ANALYSIS
+# -------------------------
 @router.get("/analyze/{username}")
-def analyze(username: str):
+async def analyze(username: str):
 
     try:
-        user = get_user(username)
-        repos = get_repos(username)
+        user = await get_user(username)
+        repos = await get_repos(username)
 
+        # ❌ NO AWAIT (these are sync)
         analysis = analyze_repos(repos)
-
         score = calculate_score(user, analysis, repos)
 
         summary = generate_summary(
@@ -49,11 +51,14 @@ def analyze(username: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# -------------------------
+# COMPARE USERS
+# -------------------------
 @router.get("/compare/{user1}/{user2}")
-def compare(user1: str, user2: str):
+async def compare(user1: str, user2: str):
 
     try:
-        data = compare_users(user1, user2)
+        data = await compare_users(user1, user2)
 
         ai_analysis = generate_comparison_summary(data)
 

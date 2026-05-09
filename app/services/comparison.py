@@ -3,17 +3,17 @@ from app.services.analyzer import analyze_repos
 from app.services.scoring import calculate_score
 
 
-def compare_users(user1: str, user2: str):
+async def compare_users(user1: str, user2: str):
 
     # user 1
-    u1 = get_user(user1)
-    r1 = get_repos(user1)
+    u1 = await get_user(user1)
+    r1 = await get_repos(user1)
     a1 = analyze_repos(r1)
     s1 = calculate_score(u1, a1, r1)
 
     # user 2
-    u2 = get_user(user2)
-    r2 = get_repos(user2)
+    u2 = await get_user(user2)
+    r2 = await get_repos(user2)
     a2 = analyze_repos(r2)
     s2 = calculate_score(u2, a2, r2)
 
