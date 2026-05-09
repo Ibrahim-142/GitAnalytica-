@@ -46,3 +46,35 @@ Write a short recruiter-style summary.
 
     except Exception as e:
         return f"AI summary unavailable: {str(e)}"
+
+
+def generate_comparison_summary(data: dict):
+
+    prompt = f"""
+You are a technical hiring assistant.
+
+Compare two developers and explain why one is better.
+
+User1:
+- {data['user1']}
+
+User2:
+- {data['user2']}
+
+Winner: {data['winner']}
+
+Explain:
+1. Why winner is better
+2. Strengths of both
+3. One improvement suggestion each
+
+Keep it short and recruiter-friendly.
+"""
+
+    res = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+
+    return res.choices[0].message.content

@@ -4,6 +4,8 @@ from app.services.github_service import get_user, get_repos
 from app.services.analyzer import analyze_repos
 from app.services.scoring import calculate_score
 from app.services.ai_summary import generate_summary
+from app.services.comparison import compare_users
+from app.services.ai_summary import generate_comparison_summary
 
 router = APIRouter()
 
@@ -45,3 +47,17 @@ def analyze(username: str):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/compare/{user1}/{user2}")
+def compare(user1: str, user2: str):
+
+    try:
+        data = compare_users(user1, user2)
+
+        ai_analysis = generate_comparison_summary(data)
+
+        return {**data, "analysis": ai_analysis}
+
+    except Exception as e:
+        return {"error": str(e)}
