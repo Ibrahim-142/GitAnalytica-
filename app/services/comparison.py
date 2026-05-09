@@ -1,36 +1,35 @@
+import asyncio
 from app.services.github_service import get_user, get_repos
 from app.services.analyzer import analyze_repos
 from app.services.scoring import calculate_score
 
 
-async def compare_users(user1: str, user2: str):
+async def build_profile(username: str):
 
-    # user 1
-    u1 = await get_user(user1)
-    r1 = await get_repos(user1)
-    a1 = analyze_repos(r1)
-    s1 = calculate_score(u1, a1, r1)
+    user = await get_user(username)
+    repos = await get_repos(username)
 
-    # user 2
-    u2 = await get_user(user2)
-    r2 = await get_repos(user2)
-    a2 = analyze_repos(r2)
-    s2 = calculate_score(u2, a2, r2)
+    analysis = analyze_repos(repos)
+    score = calculate_score(user, analysis, repos)
 
     return {
-        "user1": {
-            "username": user1,
-            "score": s1,
-            "stars": a1["total_stars"],
-            "repos": u1.get("public_repos"),
-            "languages": a1["languages"],
-        },
-        "user2": {
-            "username": user2,
-            "score": s2,
-            "stars": a2["total_stars"],
-            "repos": u2.get("public_repos"),
-            "languages": a2["languages"],
-        },
-        "winner": user1 if s1 > s2 else user2 if s2 > s1 else "tie",
+        "username": username,
+        "score": score,
+        "stars": analysis["total_stars"],
+        "repos": user.get("public_repos"),
+        "languages": analysis["languages"],
     }
+
+
+async def compare_users(user1: str, user2: str):
+
+    # ⚡ RUN BOTH USERS IN PARALLEL
+    u1_data, u2_data = await asyncio.gather(build_profile(user1), build_profile(user2))
+
+    winner = (
+        user1
+        if u1_data["score"] > u2_data["score"]
+        else user2 if u2_data["score"] > u1_data["score"] else "tie"
+    )
+
+    return {"user1": u1_data, "user2": u2_data, "winner": winner}
