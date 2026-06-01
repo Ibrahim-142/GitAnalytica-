@@ -5,6 +5,7 @@ from app.services.analyzer import analyze_repos
 from app.services.scoring import calculate_score
 from app.services.ai_summary import generate_summary, generate_comparison_summary
 from app.services.comparison import compare_users
+from app.services.pr_review import parse_pr_url, get_pr_files, generate_review
 
 router = APIRouter()
 
@@ -66,3 +67,22 @@ async def compare(user1: str, user2: str):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+@router.post("/review/pr-url")
+async def review_pr(data: dict):
+
+    url = data.get("url")
+
+    owner, repo, pr_number = parse_pr_url(url)
+
+    pr_files = await get_pr_files(owner, repo, pr_number)
+
+    review = generate_review(pr_files)
+
+    return {
+        "repo": f"{owner}/{repo}",
+        "pr": pr_number,
+        "files_reviewed": len(pr_files),
+        "review": review,
+    }
