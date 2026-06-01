@@ -5,20 +5,29 @@ def calculate_score(user, analysis, repos):
 
     score = 0
 
-    # followers
-    score += min(user.get("followers", 0) * 2, 20)
+    # -------------------------
+    # 1. Repo quality (MOST IMPORTANT)
+    # -------------------------
+    # normalize stars so small devs are not punished
+    star_score = min(analysis["total_stars"] * 2, 25)
+    score += star_score
 
-    # stars
-    score += min(analysis["total_stars"] * 3, 30)
+    # -------------------------
+    # 2. Consistency (repo activity + count)
+    # -------------------------
+    repo_count = user.get("public_repos", 0)
+    score += min(repo_count * 1.2, 20)
 
-    # repos
-    score += min(user.get("public_repos", 0), 20)
+    # -------------------------
+    # 3. Language diversity (skills signal)
+    # -------------------------
+    lang_score = len(analysis["languages"]) * 3
+    score += min(lang_score, 15)
 
-    # languages
-    score += min(len(analysis["languages"]) * 2, 10)
-
-    # activity
-    active = False
+    # -------------------------
+    # 4. Activity (soft scoring, not binary)
+    # -------------------------
+    recent = 0
 
     for r in repos:
         updated = r.get("updated_at")
@@ -29,11 +38,22 @@ def calculate_score(user, analysis, repos):
             tzinfo=timezone.utc
         )
 
-        if (datetime.now(timezone.utc) - dt).days < 30:
-            active = True
-            break
+        days = (datetime.now(timezone.utc) - dt).days
 
-    if active:
-        score += 20
+        if days < 30:
+            recent += 1
 
-    return min(score, 100)
+    # normalize activity (NOT binary anymore)
+    activity_score = min(recent * 2, 15)
+    score += activity_score
+
+    # -------------------------
+    # 5. Bonus: meaningful contribution signal
+    # -------------------------
+    fork_penalty = sum(1 for r in repos if r.get("fork"))
+    score -= min(fork_penalty * 1, 5)
+
+    # -------------------------
+    # FINAL NORMALIZATION
+    # -------------------------
+    return max(0, min(int(score), 100))
